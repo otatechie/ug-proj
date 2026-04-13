@@ -1,16 +1,4 @@
-# ─── Stage 1: Build frontend assets ─────────────────────────────────────────
-FROM node:20-alpine AS frontend
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-
-# ─── Stage 2: Install PHP dependencies ──────────────────────────────────────
+# ─── Stage 1: Install PHP dependencies ──────────────────────────────────────
 FROM composer:2 AS vendor
 
 WORKDIR /app
@@ -21,7 +9,21 @@ RUN composer install \
     --no-interaction \
     --no-scripts \
     --optimize-autoloader \
-    --prefer-dist
+    --prefer-dist \
+    --ignore-platform-reqs
+
+
+# ─── Stage 2: Build frontend (needs PHP + vendor for Wayfinder) ─────────────
+FROM php:8.3-cli-alpine AS frontend
+
+RUN apk add --no-cache nodejs npm
+
+WORKDIR /app
+
+COPY --from=vendor /app/vendor ./vendor
+COPY . .
+
+RUN npm ci && npm run build
 
 
 # ─── Stage 3: Runtime image ─────────────────────────────────────────────────
