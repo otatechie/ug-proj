@@ -1,0 +1,73 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@theme {
+    /* Dashboard theme - Analytics style */
+    --font-sans: 'Google Sans Code', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-primary: #ef3f09;
+    --color-primary-hover: #d63608;
+    --color-foreground: #0c1c3c;
+    --color-muted: #f7f7f7;
+    --color-border: #dcdedd;
+    --color-accent-lime: #c5e151;
+    --color-accent-teal: #82d9d7;
+    --color-accent-peach: #faac7b;
+    --color-success: #22c55e;
+    --color-success-light: #dcfce7;
+    --color-success-dark: #166534;
+    --color-error: #ef4444;
+    --color-error-light: #fee2e2;
+    --color-error-dark: #991b1b;
+    --color-warning: #eab308;
+    --color-warning-light: #fef9c3;
+    --color-warning-dark: #854d0e;
+    --color-info: #3b82f6;
+    --color-info-light: #dbeafe;
+    --color-info-dark: #1e40af;
+    --color-alert: #f97316;
+    --color-alert-light: #ffedd5;
+    --color-alert-dark: #9a3412;
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+
+    --radius-card: 20px;
+    --radius-button: 16px;
+    --radius-icon: 22px;
+}
+
+@utility rounded-card {
+    border-radius: var(--radius-card);
+}
+@utility rounded-button {
+    border-radius: var(--radius-button);
+}
+@utility rounded-icon {
+    border-radius: var(--radius-icon);
+}
+
+/* UI polish for Google Sans Code */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Buttons and links show pointer cursor; disabled shows not-allowed */
+button,
+[role="button"],
+a[href] {
+    cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+    cursor: not-allowed;
+}
