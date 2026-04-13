@@ -55,7 +55,10 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
 ENV PORT=8080
 EXPOSE 8080
 
-CMD php artisan config:cache \
+CMD sh -c 'mkdir -p /tmp \
+    && touch "${DB_DATABASE:-/tmp/database.sqlite}" \
+    && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache \
-    && php artisan serve --host=0.0.0.0 --port=$PORT
+    && php artisan migrate --force --no-interaction || true \
+    && php artisan serve --host=0.0.0.0 --port=$PORT'
