@@ -15,8 +15,6 @@ class HomeController extends Controller
             'analysis' => session('analysis'),
             'error' => session('error'),
             'initialLogContent' => session('log_content'),
-            'apiKeysSaved' => session('api_keys_saved'),
-            'apiKeysStoreUrl' => route('settings.api-keys.store'),
         ]);
     }
 }

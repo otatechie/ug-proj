@@ -20,9 +20,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(Client::class, function (): ?Client {
-            $request = request();
-            $openrouterKey = $request->session()->get('openrouter_api_key') ?? config('services.openrouter.api_key');
-            $openaiKey = $request->session()->get('openai_api_key') ?? config('services.openai.api_key');
+            $openrouterKey = config('services.openrouter.api_key');
+            $openaiKey = config('services.openai.api_key');
 
             if (! empty($openrouterKey)) {
                 config()->set('ai.model', config('services.openrouter.model'));
@@ -62,11 +61,6 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('analyze', function (Request $request) use ($attempts, $decayMinutes) {
             return Limit::perMinutes($decayMinutes, $attempts)
-                ->by($request->user()?->id ?? $request->ip());
-        });
-
-        RateLimiter::for('api-keys', function (Request $request) {
-            return Limit::perMinute(10)
                 ->by($request->user()?->id ?? $request->ip());
         });
     }

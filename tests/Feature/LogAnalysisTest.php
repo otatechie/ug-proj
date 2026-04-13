@@ -123,8 +123,7 @@ test('throttles excessive analysis requests', function () {
     }
 
     $response = $this->post(route('analyze.store'), ['log_content' => 'log']);
-    $response->assertRedirect(route('home'));
-    expect(session('error'))->toContain('Too many');
+    $response->assertStatus(429);
 });
 
 // ── Home page shows session data ──────────────────────────────────────────────

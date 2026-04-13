@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: ai-cybersecurity
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: AI Cybersecurity
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        sync: false
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_STACK
+        value: single
+      - key: LOG_LEVEL
+        value: warning
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /tmp/database.sqlite
+      - key: SESSION_DRIVER
+        value: cookie
+      - key: SESSION_LIFETIME
+        value: "120"
+      - key: SESSION_ENCRYPT
+        value: "true"
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: SESSION_SAME_SITE
+        value: lax
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: BROADCAST_CONNECTION
+        value: log
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: MAIL_MAILER
+        value: log
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-4o-mini
+      - key: ANALYZE_THROTTLE_ATTEMPTS
+        value: "10"

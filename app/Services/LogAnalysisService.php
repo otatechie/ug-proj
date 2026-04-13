@@ -146,6 +146,7 @@ PROMPT;
                 $decoded[$key] = [];
             }
         }
+
         return $decoded;
     }
 }

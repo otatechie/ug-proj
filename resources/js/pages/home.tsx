@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { AlertTriangle, AlignJustify, CheckCircle2, Download, Key, Loader2, Send, Shield, ShieldAlert, Trash2, Upload, X } from 'lucide-react';
+import { AlertTriangle, AlignJustify, CheckCircle2, Download, Loader2, Send, Shield, ShieldAlert, Trash2, Upload, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { store } from '@/routes/analyze';
@@ -25,8 +25,6 @@ interface Props {
     analysis: Analysis | null;
     error: string | null;
     initialLogContent?: string | null;
-    apiKeysSaved?: boolean;
-    apiKeysStoreUrl?: string;
 }
 
 const riskColors: Record<string, string> = {
@@ -57,35 +55,16 @@ export default function Home({
     analysis,
     error,
     initialLogContent,
-    apiKeysSaved,
-    apiKeysStoreUrl,
 }: Props) {
     const [menuOpen, setMenuOpen] = useState(false);
-    const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
-    const [toastVisible, setToastVisible] = useState(!!apiKeysSaved);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { data, setData, post, processing, errors } = useForm({
         log_content: initialLogContent ?? '',
-    });
-    const apiKeyForm = useForm({
-        openai_key: '',
-        openrouter_key: '',
     });
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
         post(store.url(), { forceFormData: false });
-    };
-
-    const submitApiKeys = (e: FormEvent) => {
-        e.preventDefault();
-        if (!apiKeysStoreUrl) return;
-        apiKeyForm.post(apiKeysStoreUrl, {
-            forceFormData: false,
-            onSuccess: () => {
-                setApiKeyModalOpen(false);
-            },
-        });
     };
 
     const loadSample = (key: keyof SampleLogs) => {
@@ -132,20 +111,17 @@ export default function Home({
         URL.revokeObjectURL(url);
     };
 
-    // Auto-dismiss toast after 3 s
+    // Close mobile menu on Escape; lock body scroll while open
     useEffect(() => {
-        if (!toastVisible) return;
-        const id = setTimeout(() => setToastVisible(false), 3000);
-        return () => clearTimeout(id);
-    }, [toastVisible]);
-
-    // Close modal on Escape
-    useEffect(() => {
-        if (!apiKeyModalOpen) return;
-        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setApiKeyModalOpen(false); };
+        if (!menuOpen) return;
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
         document.addEventListener('keydown', handler);
-        return () => document.removeEventListener('keydown', handler);
-    }, [apiKeyModalOpen]);
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.removeEventListener('keydown', handler);
+            document.body.style.overflow = '';
+        };
+    }, [menuOpen]);
 
     const resultsRef = useRef<HTMLElement>(null);
     useEffect(() => {
@@ -167,74 +143,134 @@ export default function Home({
                 />
             </Head>
             <main
-                className="min-h-screen flex flex-col bg-[url('/dot-pattern-bg.svg')] bg-size-[20px_20px] dark:bg-none dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-200 max-md:px-4 pb-[env(safe-area-inset-bottom)]"
+                className="min-h-screen flex flex-col bg-[url('/dot-pattern-bg.svg')] bg-size-[20px_20px] dark:bg-none dark:bg-gray-900 text-base text-gray-800 dark:text-gray-200 pb-[env(safe-area-inset-bottom)] overflow-x-hidden"
                 style={{ minHeight: '100dvh' }}
             >
                 {/* Nav */}
-                <nav className="flex items-center justify-between w-full md:px-16 lg:px-24 xl:px-32 py-3 md:py-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sticky top-0 z-50 bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50">
-                    <a href="/" className="flex items-center gap-2 min-h-[44px] min-w-[44px] -ml-2 pl-2 rounded-lg hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 cursor-pointer">
+                <nav className="flex items-center justify-between w-full md:px-16 lg:px-24 xl:px-32 py-3 md:py-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <a href="/" className="flex items-center gap-2 min-h-[44px] rounded-lg hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 cursor-pointer">
                         <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shrink-0">
                             <Shield className="w-5 h-5 text-white" strokeWidth={2} />
                         </div>
-                        <span className="font-bold text-foreground dark:text-gray-100 text-base">
+                        <span className="font-bold text-slate-800 dark:text-gray-100 text-base">
                             AI Cybersecurity
                         </span>
                     </a>
-                    <div
-                        id="menu"
-                        className={`flex items-center gap-8 font-medium md:flex max-md:fixed max-md:inset-0 max-md:bg-white/95 dark:max-md:bg-gray-900/98 max-md:backdrop-blur max-md:items-center max-md:justify-center max-md:flex-col max-md:gap-6 max-md:text-lg max-md:transition-opacity max-md:duration-300 max-md:z-40 ${
-                            menuOpen ? 'max-md:opacity-100 max-md:pointer-events-auto' : 'max-md:opacity-0 max-md:pointer-events-none'
-                        }`}
-                    >
-                        <button type="button" onClick={() => scrollTo('analyze')} className="py-3 px-4 -mx-2 rounded-lg hover:text-slate-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary max-md:min-h-[48px] max-md:w-full max-md:justify-center cursor-pointer">
+
+                    {/* Desktop nav links */}
+                    <div className="hidden md:flex items-center gap-8 font-medium">
+                        <button type="button" onClick={() => scrollTo('analyze')} className="py-2 px-3 rounded-lg text-slate-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer">
                             Analyze logs
                         </button>
-                        <button type="button" onClick={() => scrollTo('overview')} className="py-3 px-4 -mx-2 rounded-lg hover:text-slate-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary max-md:min-h-[48px] max-md:w-full max-md:justify-center cursor-pointer">
+                        <button type="button" onClick={() => scrollTo('overview')} className="py-2 px-3 rounded-lg text-slate-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer">
                             Overview
                         </button>
-                        <button type="button" onClick={() => scrollTo('ethics')} className="py-3 px-4 -mx-2 rounded-lg hover:text-slate-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary max-md:min-h-[48px] max-md:w-full max-md:justify-center cursor-pointer">
+                        <button type="button" onClick={() => scrollTo('ethics')} className="py-2 px-3 rounded-lg text-slate-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer">
                             Security & ethics
                         </button>
-                        <button
-                            type="button"
-                            aria-label="Close menu"
-                            className="min-h-[44px] min-w-[44px] md:hidden absolute top-4 right-4 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary text-gray-700 dark:text-gray-300 cursor-pointer"
-                            onClick={() => setMenuOpen(false)}
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
                     </div>
+
                     <button
                         type="button"
                         onClick={() => scrollTo('analyze')}
-                        className="max-md:hidden px-6 py-2.5 text-white bg-primary font-medium hover:bg-primary-hover transition active:scale-95 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 cursor-pointer"
+                        className="hidden md:inline-flex px-6 py-2.5 text-white bg-primary font-medium hover:bg-primary-hover transition active:scale-95 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 cursor-pointer"
                     >
                         Analyze logs
                     </button>
+
+                    {/* Mobile hamburger */}
                     <button
                         type="button"
                         aria-label="Open menu"
                         aria-expanded={menuOpen}
-                        aria-controls="menu"
-                        className="min-h-[44px] min-w-[44px] md:hidden flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary text-gray-700 dark:text-gray-300 cursor-pointer"
+                        aria-controls="mobile-menu"
+                        className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
                         onClick={() => setMenuOpen(true)}
                     >
                         <AlignJustify className="w-6 h-6" />
                     </button>
                 </nav>
 
+                {/* Mobile menu: backdrop + slide-in drawer */}
+                <div
+                    className={`md:hidden fixed inset-0 z-[60] bg-black/50 transition-opacity duration-200 ${
+                        menuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                    aria-hidden="true"
+                />
+                <aside
+                    id="mobile-menu"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Main menu"
+                    className={`md:hidden fixed top-0 right-0 bottom-0 z-[70] w-[80%] max-w-xs bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 ease-out ${
+                        menuOpen ? 'translate-x-0' : 'translate-x-full'
+                    }`}
+                    style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+                >
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                <Shield className="w-4 h-4 text-white" strokeWidth={2} />
+                            </div>
+                            <span className="font-bold text-slate-800 dark:text-gray-100">Menu</span>
+                        </div>
+                        <button
+                            type="button"
+                            aria-label="Close menu"
+                            onClick={() => setMenuOpen(false)}
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                    <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-1">
+                        <button
+                            type="button"
+                            onClick={() => scrollTo('analyze')}
+                            className="flex items-center min-h-[48px] px-4 rounded-lg text-base font-medium text-slate-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+                        >
+                            Analyze logs
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => scrollTo('overview')}
+                            className="flex items-center min-h-[48px] px-4 rounded-lg text-base font-medium text-slate-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+                        >
+                            Overview
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => scrollTo('ethics')}
+                            className="flex items-center min-h-[48px] px-4 rounded-lg text-base font-medium text-slate-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+                        >
+                            Security & ethics
+                        </button>
+                    </nav>
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                            type="button"
+                            onClick={() => scrollTo('analyze')}
+                            className="w-full min-h-[48px] px-6 text-white bg-primary font-medium hover:bg-primary-hover active:scale-[0.98] rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 cursor-pointer"
+                        >
+                            Start analyzing
+                        </button>
+                    </div>
+                </aside>
+
                 {/* Hero */}
-                <div className="flex flex-col items-center justify-center flex-1 w-full py-8 md:py-16 text-center">
-                    <h1 className="text-3xl sm:text-4xl md:text-[40px] font-bold px-2 sm:px-4 bg-linear-to-r from-slate-800 to-slate-700 dark:from-gray-100 dark:to-gray-200 bg-clip-text text-transparent">
+                <div className="flex flex-col items-center justify-center flex-1 w-full py-8 md:py-16 text-center px-4 sm:px-6">
+                    <h1 className="text-[28px] leading-tight sm:text-4xl md:text-[40px] font-bold max-w-2xl w-full text-slate-800 dark:text-gray-100 text-balance">
                         What do you want to analyze?
                     </h1>
-                    <p className="text-base mt-4 md:mt-6 text-slate-600 dark:text-gray-400 max-w-lg px-2">
+                    <p className="text-base mt-4 md:mt-6 text-slate-600 dark:text-gray-400 max-w-lg text-pretty">
                         Paste logs and get AI-powered threat detection and mitigation suggestions.
                     </p>
-                    <p className="mt-2 text-xs text-slate-500 dark:text-gray-500 max-w-3xl px-0">
+                    <p className="mt-2 text-xs text-slate-500 dark:text-gray-500 max-w-xl">
                         Content is sent for analysis only and is not stored.
                     </p>
-                    <form onSubmit={submit} id="analyze" className="max-w-3xl w-full mt-6 md:mt-8 scroll-mt-24 px-0">
+                    <form onSubmit={submit} id="analyze" className="max-w-3xl w-full mt-6 md:mt-8 scroll-mt-24">
                         {error && (
                             <div className="mb-4 rounded-xl border border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-800 dark:text-red-200" role="alert">
                                 <p className="font-medium">{error}</p>
@@ -248,14 +284,14 @@ export default function Home({
                                 onChange={(e) => setData('log_content', e.target.value)}
                                 placeholder="Paste log lines or describe what you want to analyze..."
                                 rows={5}
-                                className="w-full p-4 pb-0 resize-none outline-none bg-transparent text-foreground dark:text-gray-200 placeholder:text-slate-500 dark:placeholder:text-gray-500 min-h-[120px] text-base"
+                                className="w-full p-4 pb-0 resize-none outline-none bg-transparent text-slate-800 dark:text-gray-200 placeholder:text-slate-500 dark:placeholder:text-gray-500 min-h-[140px] text-base"
                                 aria-invalid={!!errors.log_content}
                                 aria-describedby={errors.log_content ? 'log_content-error' : undefined}
                             />
-                            <div className="flex items-center justify-between pb-3 px-3 md:px-4 pt-2 gap-3 border-t border-slate-200/70 dark:border-gray-600/80" aria-live="polite" aria-busy={processing}>
-                                <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-between pb-2 px-2 md:px-4 pt-2 gap-2 border-t border-slate-200/70 dark:border-gray-600/80" aria-live="polite" aria-busy={processing}>
+                                <div className="flex items-center gap-1.5 min-w-0">
                                     {data.log_content.length > 40000 && (
-                                        <span className={`text-xs tabular-nums ${data.log_content.length >= 50000 ? 'text-red-500 dark:text-red-400 font-medium' : 'text-amber-500 dark:text-amber-400'}`} aria-live="polite">
+                                        <span className={`hidden sm:inline text-xs tabular-nums ${data.log_content.length >= 50000 ? 'text-red-500 dark:text-red-400 font-medium' : 'text-amber-500 dark:text-amber-400'}`} aria-live="polite">
                                             {data.log_content.length.toLocaleString()} / 50,000
                                         </span>
                                     )}
@@ -288,13 +324,13 @@ export default function Home({
                                 <button
                                     type="submit"
                                     disabled={processing || !data.log_content.trim()}
-                                    className="flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover disabled:opacity-50 transition-colors text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                                    className="flex items-center justify-center gap-2 min-h-[44px] px-3 sm:px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover disabled:opacity-50 transition-colors text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 shrink-0 cursor-pointer disabled:cursor-not-allowed"
                                     aria-label={processing ? 'Analyzing' : 'Analyze'}
                                 >
                                     {processing ? (
                                         <>
                                             <Loader2 className="w-5 h-5 shrink-0 animate-spin" strokeWidth={2} aria-hidden />
-                                            <span className="text-sm font-medium">Analyzing…</span>
+                                            <span className="text-sm font-medium hidden sm:inline">Analyzing…</span>
                                         </>
                                     ) : (
                                         <>
@@ -495,101 +531,18 @@ export default function Home({
                     </div>
                 </section>
 
-                <footer className="pt-2 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm text-center flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
-                        <span>By using this tool you agree to our</span>
-                        <button type="button" onClick={() => scrollTo('ethics')} className="underline hover:text-slate-700 dark:hover:text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 rounded cursor-pointer shrink-0">
-                            Security & ethics
-                        </button>
-                        <span>guidelines.</span>
-                        {apiKeysStoreUrl && (
-                            <>
-                                <span className="text-slate-400 dark:text-gray-500" aria-hidden>·</span>
-                                <button type="button" onClick={() => setApiKeyModalOpen(true)} className="inline-flex items-center gap-1.5 underline hover:text-slate-700 dark:hover:text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded cursor-pointer font-medium shrink-0">
-                                    <Key className="w-4 h-4" aria-hidden />
-                                    Set API key
-                                </button>
-                            </>
-                        )}
-                        <span className="text-slate-400 dark:text-gray-500" aria-hidden>·</span>
-                        <span>© {new Date().getFullYear()} AI Cybersecurity</span>
-                    </p>
-                </footer>
-
-                {/* API key modal */}
-                {apiKeyModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title" onClick={() => setApiKeyModalOpen(false)}>
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-gray-600" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 id="api-key-modal-title" className="text-lg font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2">
-                                    <Key className="w-5 h-5 text-primary" aria-hidden />
-                                    Set API key
-                                </h2>
-                                <button type="button" onClick={() => setApiKeyModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 text-slate-500 dark:text-gray-400 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Close">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <p className="text-sm text-slate-600 dark:text-gray-400 mb-4">
-                                Stored for this session only. Prefer <code className="px-1 py-0.5 bg-slate-100 dark:bg-gray-700 rounded text-xs">.env</code> for production.
-                            </p>
-                            <form onSubmit={submitApiKeys} className="space-y-4">
-                                <div>
-                                    <label htmlFor="openai_key" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">OpenAI API key (optional)</label>
-                                    <input
-                                        id="openai_key"
-                                        type="password"
-                                        value={apiKeyForm.data.openai_key}
-                                        onChange={(e) => apiKeyForm.setData('openai_key', e.target.value)}
-                                        placeholder="sk-..."
-                                        className={`w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-200 placeholder:text-slate-400 focus:ring-2 focus:ring-primary/30 focus:border-primary ${apiKeyForm.errors.openai_key ? 'border-red-400 dark:border-red-500' : 'border-slate-200 dark:border-gray-600'}`}
-                                        autoComplete="off"
-                                        autoFocus
-                                        aria-describedby={apiKeyForm.errors.openai_key ? 'openai-key-error' : undefined}
-                                        aria-invalid={!!apiKeyForm.errors.openai_key}
-                                    />
-                                    {apiKeyForm.errors.openai_key && (
-                                        <p id="openai-key-error" className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{apiKeyForm.errors.openai_key}</p>
-                                    )}
-                                </div>
-                                <div>
-                                    <label htmlFor="openrouter_key" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">OpenRouter API key (optional)</label>
-                                    <input
-                                        id="openrouter_key"
-                                        type="password"
-                                        value={apiKeyForm.data.openrouter_key}
-                                        onChange={(e) => apiKeyForm.setData('openrouter_key', e.target.value)}
-                                        placeholder="sk-or-..."
-                                        className={`w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-200 placeholder:text-slate-400 focus:ring-2 focus:ring-primary/30 focus:border-primary ${apiKeyForm.errors.openrouter_key ? 'border-red-400 dark:border-red-500' : 'border-slate-200 dark:border-gray-600'}`}
-                                        autoComplete="off"
-                                        aria-describedby={apiKeyForm.errors.openrouter_key ? 'openrouter-key-error' : undefined}
-                                        aria-invalid={!!apiKeyForm.errors.openrouter_key}
-                                    />
-                                    {apiKeyForm.errors.openrouter_key && (
-                                        <p id="openrouter-key-error" className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{apiKeyForm.errors.openrouter_key}</p>
-                                    )}
-                                </div>
-                                <p className="text-xs text-slate-500 dark:text-gray-500">OpenRouter takes precedence if both are set.</p>
-                                {apiKeyForm.hasErrors && !apiKeyForm.errors.openai_key && !apiKeyForm.errors.openrouter_key && (
-                                    <p className="text-xs text-red-600 dark:text-red-400" role="alert">Something went wrong. Please try again.</p>
-                                )}
-                                <div className="flex gap-2 justify-end pt-2">
-                                    <button type="button" onClick={() => setApiKeyModalOpen(false)} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-gray-600 text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" disabled={apiKeyForm.processing} className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover disabled:opacity-50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                                        {apiKeyForm.processing ? 'Saving…' : 'Save'}
-                                    </button>
-                                </div>
-                            </form>
+                <footer className="pt-6 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] border-t border-slate-200 dark:border-gray-700 mt-8">
+                    <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-slate-500 dark:text-gray-400 text-center">
+                        <p className="order-2 sm:order-1">
+                            © {new Date().getFullYear()} AI Cybersecurity
+                        </p>
+                        <div className="order-1 sm:order-2 flex items-center gap-4">
+                            <button type="button" onClick={() => scrollTo('ethics')} className="underline-offset-2 hover:underline hover:text-slate-700 dark:hover:text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded cursor-pointer">
+                                Security & ethics
+                            </button>
                         </div>
                     </div>
-                )}
-
-                {toastVisible && (
-                    <p className="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-medium shadow-lg z-50" role="status">
-                        API key saved for this session.
-                    </p>
-                )}
+                </footer>
             </main>
         </>
     );
