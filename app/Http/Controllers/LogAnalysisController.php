@@ -50,9 +50,7 @@ class LogAnalysisController extends Controller
                     'exception' => $e::class,
                     'message' => $message,
                 ]);
-                $error = app()->isProduction()
-                    ? 'Analysis failed. Please try again or use a sample above.'
-                    : 'Analysis failed: '.$message;
+                $error = 'Analysis failed. Please try again or use a sample above.';
             }
 
             return Redirect::route('home')->with([

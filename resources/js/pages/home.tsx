@@ -74,10 +74,19 @@ export default function Home({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const MAX_BYTES = 256 * 1024;
+        const MAX_CHARS = 20000;
+        if (file.size > MAX_BYTES) {
+            alert('File is too large. Please upload a log file under 256 KB.');
+            e.target.value = '';
+            return;
+        }
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target?.result;
-            if (typeof text === 'string') setData('log_content', text);
+            if (typeof text === 'string') {
+                setData('log_content', text.slice(0, MAX_CHARS));
+            }
         };
         reader.readAsText(file);
         e.target.value = '';
@@ -385,7 +394,7 @@ export default function Home({
                                 <button type="button" onClick={() => exportReport(analysis)} className="text-sm font-medium text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded px-3 py-1.5 -m-1.5 cursor-pointer">
                                     <Download className="w-4 h-4" strokeWidth={2} aria-hidden />
                                     Export report
-                                </button>
+            e                    </button>
                                 <button type="button" onClick={() => scrollTo('analyze')} className="text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 rounded px-3 py-1.5 -m-1.5 cursor-pointer">
                                     Analyze again
                                 </button>

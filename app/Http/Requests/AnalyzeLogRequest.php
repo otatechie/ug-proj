@@ -17,7 +17,7 @@ class AnalyzeLogRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'log_content' => ['required', 'string', 'max:50000', 'min:1'],
+            'log_content' => ['required', 'string', 'max:20000', 'min:1'],
         ];
     }
 
@@ -25,7 +25,7 @@ class AnalyzeLogRequest extends FormRequest
     {
         return [
             'log_content.required' => 'Please paste log content or upload a file.',
-            'log_content.max' => 'Log content may not exceed 50,000 characters.',
+            'log_content.max' => 'Log content may not exceed 20,000 characters.',
         ];
     }
 }
